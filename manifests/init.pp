@@ -1,20 +1,19 @@
 class memcached(
-  $package_ensure  = $::memcached::params::package_ensure,
-  $logfile         = $::memcached::params::logfile,
-  $max_memory      = $::memcached::params::max_memory,
-  $listen_ip       = $::memcached::params::listen_ip,
-  $tcp_port        = $::memcached::params::tcp_port,
-  $udp_port        = $::memcached::params::udp_port,
+  $package_ensure  = 'present',
+  $logfile         = '/var/log/memcached.log',
+  $max_memory      = false,
+  $lock_memory     = false,
+  $listen_ip       = '0.0.0.0',
+  $tcp_port        = 11211,
+  $udp_port        = 11211,
   $user            = $::memcached::params::user,
-  $max_connections = $::memcached::params::max_connections
+  $max_connections = '8192',
+  $verbosity       = undef,
+  $unix_socket     = undef
 ) inherits memcached::params {
 
-  if !($::operatingsystem in ['ubuntu','debian','centos','redhat','Debian']) {
-    fail("Unsupported platform for memcached module: ${::operatingsystem}")
-  }
-
   package { $memcached::params::package_name:
-    ensure => $memcached::params::package_ensure,
+    ensure => $package_ensure,
   }
 
   file { $memcached::params::config_file:

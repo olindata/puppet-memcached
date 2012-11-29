@@ -1,5 +1,21 @@
-PORT="<%= scope.lookupvar('memcached::params::udp_port') %>"
-USER="<%= scope.lookupvar('memcached::params::user') %>"
-MAXCONN="<%= scope.lookupvar('memcached::params::max_connections') %>"
-CACHESIZE="<%= scope.lookupvar('memcached::params::max_memory') %>"
-OPTIONS=""
+PORT="<%= tcp_port %>"
+USER="<%= user %>"
+MAXCONN="<%= max_connections %>"
+<% Puppet::Parser::Functions.function('memcached_max_memory') -%>
+CACHESIZE="<%= scope.function_memcached_max_memory([max_memory]) %>"
+OPTIONS="<%
+result = []
+if @verbosity
+  result << '-' + verbosity
+end
+if @lock_memory
+  result << '-k'
+end
+if @listen_ip
+  result << '-l ' + listen_ip
+end
+if @udp_port
+  result << '-U ' + udp_port
+end
+result << '-t ' + processorcount
+-%><%= result.join(' ') -%>"

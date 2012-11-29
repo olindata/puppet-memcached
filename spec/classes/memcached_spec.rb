@@ -6,6 +6,7 @@ describe 'memcached' do
       :package_ensure  => 'present',
       :logfile         => '/var/log/memcached.log',
       :max_memory      => false,
+      :lock_memory     => false,
       :listen_ip       => '0.0.0.0',
       :tcp_port        => '11211',
       :udp_port        => '11211',
@@ -19,11 +20,25 @@ describe 'memcached' do
       :package_ensure  => 'latest',
       :logfile         => '/var/log/memcached.log',
       :max_memory      => '2',
+      :lock_memory     => true,
       :listen_ip       => '127.0.0.1',
       :tcp_port        => '11212',
       :udp_port        => '11213',
       :user            => 'somebdy',
-      :max_connections => '8193'
+      :max_connections => '8193',
+      :verbosity       => 'vvv'
+    },
+    {
+      :package_ensure  => 'present',
+      :logfile         => '/var/log/memcached.log',
+      :max_memory      => '20%',
+      :lock_memory     => false,
+      :listen_ip       => '127.0.0.1',
+      :tcp_port        => '11212',
+      :udp_port        => '11213',
+      :user            => 'somebdy',
+      :max_connections => '8193',
+      :verbosity       => 'vvv'
     }
   ].each do |param_set|
     describe "when #{param_set == {} ? "using default" : "specifying"} class parameters" do
@@ -36,17 +51,17 @@ describe 'memcached' do
         param_set
       end
 
-      ['Debian', 'Ubuntu'].each do |os|
+      ['Debian'].each do |osfamily|
 
         let :facts do
           {
-            :operatingsystem => os,
-            :memorysize => '1',
+            :osfamily => osfamily,
+            :memorysize => '1000 MB',
             :processorcount => '1',
           }
         end
 
-        describe "on supported operatingsystem: #{os}" do
+        describe "on supported osfamily: #{osfamily}" do
 
           it { should contain_class('memcached::params') }
 
@@ -81,15 +96,25 @@ describe 'memcached' do
               "-t #{facts[:processorcount]}"
             ]
             if(param_hash[:max_memory])
-              expected_lines.push("-m #{param_hash[:max_memory]}")
+              if(param_hash[:max_memory].end_with?('%'))
+                expected_lines.push("-m 200")
+              else
+                expected_lines.push("-m #{param_hash[:max_memory]}")
+              end
             else
-              expected_lines.push("-m #{((facts[:memorysize].to_f*1024)*0.95).floor}")
+              expected_lines.push("-m 950")
+            end
+            if(param_hash[:lock_memory])
+              expected_lines.push("-k")
+            end
+            if(param_hash[:verbosity])
+              expected_lines.push("-vvv")
             end
             (content.split("\n") & expected_lines).should =~ expected_lines
           end
         end
       end
-      ['Redhat'].each do |os|
+      ['Redhat'].each do |osfamily|
         describe 'on supported platform' do
           it 'should fail' do
 
